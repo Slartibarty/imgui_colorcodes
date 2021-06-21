@@ -27,7 +27,7 @@ Index of this file:
 #endif
 
 // sorry, from my Quake2Game git
-#include "core/color.h"
+#include "../../core/color.h"
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
@@ -3610,9 +3610,15 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
 
         // Decode and advance source
         unsigned int c = (unsigned int)s[0];
-        unsigned int c2 = (unsigned int)s[1];
         if (c < 0x80)
         {
+            if ( s + 1 != text_end && c == '^' && IsColorIndex( s[1] ) )
+            {
+                col = ColorForIndex( s[1] );
+                col_untinted = col | ~IM_COL32_A_MASK;
+                s += 2;
+                continue;
+            }
             s += 1;
         }
         else
@@ -3636,14 +3642,6 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
             }
             if (c == '\r')
                 continue;
-        }
-
-        if (c == '^' && IsColorIndex( c2 ))
-        {
-            col = ColorForIndex(c2);
-            col_untinted = col | ~IM_COL32_A_MASK;
-            s += 1;
-            continue;
         }
 
         const ImFontGlyph* glyph = FindGlyph((ImWchar)c);
