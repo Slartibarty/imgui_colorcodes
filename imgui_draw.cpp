@@ -26,6 +26,9 @@ Index of this file:
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+// sorry, from my Quake2Game git
+#include "../../core/color.h"
+
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
 
@@ -3596,7 +3599,10 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
     ImDrawIdx* idx_write = draw_list->_IdxWritePtr;
     unsigned int vtx_current_idx = draw_list->_VtxCurrentIdx;
 
-    const ImU32 col_untinted = col | ~IM_COL32_A_MASK;
+    ImU32 col_untinted = col | ~IM_COL32_A_MASK;
+
+    const ImU32 old_col = col;
+    const ImU32 old_col_untinted = col_untinted;
 
     while (s < text_end)
     {
@@ -3627,9 +3633,16 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
         }
 
         // Decode and advance source
-        unsigned int c = (unsigned int)*s;
+        unsigned int c = (unsigned int)s[0];
         if (c < 0x80)
         {
+            if ( s + 1 != text_end && c == '^' && IsColorIndex( s[1] ) )
+            {
+                col = ColorForIndex( s[1] );
+                col_untinted = col | ~IM_COL32_A_MASK;
+                s += 2;
+                continue;
+            }
             s += 1;
         }
         else
@@ -3643,6 +3656,8 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
         {
             if (c == '\n')
             {
+                col = old_col;
+                col_untinted = old_col_untinted;
                 x = pos.x;
                 y += line_height;
                 if (y > clip_rect.w)
